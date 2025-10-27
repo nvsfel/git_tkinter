@@ -1,33 +1,48 @@
+import PyPDF2
+
+#tramitações no PDF
+
+def pegar_texto(pdf):
+    reader = PyPDF2.PdfReader(pdf)
+    return reader.pages[0].extract_text()
 
 
-
-
-#Fazer chamada api
 import requests
 
-url = "https://date.nager.at/api/v3/PublicHolidays/2025/BR"
+#chamada API
 
-payload = {}
-headers = {
-  'accept': 'application/json',
-  'X-CSRF-TOKEN': 'pYBqfz7tfH5NFeqA2YXNhdZIsqRCMmef6FjOTNJz'
-  }
+def pegar_feriados(ano_corrido):
+    url = "https://date.nager.at/api/v3/PublicHolidays/" + ano_corrido + "/BR"
 
-response = requests.request("GET", url, headers=headers, data=payload)
+    payload = {}
+    headers = {
+        'accept': 'application/json',
+        'X-CSRF-TOKEN': 'pYBqfz7tfH5NFeqA2YXNhdZIsqRCMmef6FjOTNJz'
+    }
 
-print(response.text)
+    response = requests.request("GET", url, headers=headers, data=payload)
+    dias_feriado = re.findall(r'(?<="date":")(\d{4}-\d{2}-\d{2})*', response.text)
+    return dias_feriado
 
+import re
 
-#Ler PDf
-import PyPDF2
-   
-def Get_text_from_PDFfiles_usingPyPDF2(in_PdfFile):  
-    reader = PyPDF2.PdfReader(in_PdfFile) 
-    print(reader.pages[0].extract_text())
+#comparar e separar
 
+def pegar_datas(text):
+    anos = set(re.findall(r'\d{4}', text))
+    
+    feriados = [feriado for ano in anos for feriado in pegar_feriados(ano)]
+    
+    datas = re.findall(r'\d{4}-\d{2}-\d{2}', text)
+    
+    encontrados = [data for data in datas if data in feriados]
 
-#Interface
+    print(encontrados)
+    return encontrados
+
+#interface
 import tkinter
+
 def go():
     root = tkinter.Tk()
     root.title("Titulo da janela")
@@ -41,9 +56,8 @@ def go():
     caixa_texto.pack(pady=5)
         
     test = tkinter.Button(root, text="LER PDF")
-    test['command'] = lambda: Get_text_from_PDFfiles_usingPyPDF2()
+    test['command'] = lambda: pegar_datas(pegar_texto(caixa_texto.get()))   
     test.pack()
-
 
 
     root.mainloop()
